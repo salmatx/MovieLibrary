@@ -16,5 +16,8 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        val tmdbApiKey = BuildConfig.TMDB_API
+        val streamingApiKey = BuildConfig.STREAMING_API_KEY
     }
 }
