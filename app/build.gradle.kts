@@ -6,6 +6,7 @@ localProperties.load(rootProject.file("local.properties").inputStream())
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -20,6 +21,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "TMDB_API", "\"${localProperties["TMDB_API"]}\"")
+        buildConfigField("String", "STREAMING_API_KEY", "\"${localProperties["STREAMING_API_KEY"]}\"")
     }
 
     buildTypes {
@@ -29,9 +33,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-
-            buildConfigField("String", "TMDB_API", "\"${localProperties["TMDB_API"]}\"")
-            buildConfigField("String", "STREAMING_API_KEY", "\"${localProperties["STREAMING_API_KEY"]}\"")
         }
     }
 
@@ -49,12 +50,18 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.gson)
+    implementation(libs.timber)
+    implementation(libs.github.glide)
+    kapt(libs.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
