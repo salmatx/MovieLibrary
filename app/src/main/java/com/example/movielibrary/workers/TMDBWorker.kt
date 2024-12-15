@@ -118,4 +118,27 @@ class TMDBWorker {
             null
         }
     }
+
+    suspend fun fetchMovieById(movieId: Int): Movie? {
+        return try {
+            val tmdbApiKey = BuildConfig.TMDB_API
+            val tmdbApi = NetworkClient.getTMDBClient().create(TMDBApi::class.java)
+
+            val response = tmdbApi.getMovieById(movieId, tmdbApiKey)
+            if (response.isSuccessful && response.body() != null) {
+                val movie = response.body()!!
+                val baseUrl = "https://image.tmdb.org/t/p/w500"
+                movie.imageUrl = baseUrl + (movie.imageUrl ?: "")
+                movie
+            } else {
+                Timber.e("Failed to fetch movie by ID. Response: ${response.message()}")
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error while fetching movie by ID: $movieId")
+            null
+        }
+    }
+
+
 }

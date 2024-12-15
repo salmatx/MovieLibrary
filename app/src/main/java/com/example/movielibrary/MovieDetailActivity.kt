@@ -1,6 +1,7 @@
 package com.example.movielibrary
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Button
@@ -10,11 +11,14 @@ import android.widget.RadioGroup
 import android.widget.RatingBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.movielibrary.datastore.cachedMovies
 import com.example.movielibrary.models.Movie
+import com.example.movielibrary.workers.TMDBWorker
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class MovieDetailActivity : AppCompatActivity() {
@@ -36,31 +40,72 @@ class MovieDetailActivity : AppCompatActivity() {
             return
         }
 
-        val selectedMovie = findMovieById(selectedMovieId)?.apply {
-            val savedMovie = getSavedMovieById(id)
+        lifecycleScope.launch {
+            val selectedMovie = fetchMovieDetails(selectedMovieId)
+
+            if (selectedMovie == null) {
+                Timber.e("Movie not found in cache or via API for ID: $selectedMovieId")
+                finish()
+                return@launch
+            }
+
+            displayMovieDetails(selectedMovie)
+
+            val addToWatchlistButton: Button = findViewById(R.id.addToWatchlistButton)
+            val removeFromWatchlistButton: Button = findViewById(R.id.removeFromWatchlistButton)
+            val saveButton: Button = findViewById(R.id.saveButton)
+
+            val isInWatchlist = isInWatchlist(selectedMovie.id)
+
+            addToWatchlistButton.isEnabled = !isInWatchlist
+            removeFromWatchlistButton.isEnabled = isInWatchlist
+
+            addToWatchlistButton.setOnClickListener {
+                addToWatchlist(selectedMovie.id)
+                addToWatchlistButton.isEnabled = false
+                removeFromWatchlistButton.isEnabled = true
+            }
+
+            removeFromWatchlistButton.setOnClickListener {
+                removeFromWatchlist(selectedMovie.id)
+                addToWatchlistButton.isEnabled = true
+                removeFromWatchlistButton.isEnabled = false
+
+                val resultIntent = Intent()
+                resultIntent.putExtra("removedMovieId", selectedMovie.id)
+                setResult(RESULT_OK, resultIntent)
+                finish()
+            }
+
+            saveButton.setOnClickListener {
+                saveMovieToPreferences(selectedMovie)
+            }
+        }
+    }
+
+    private suspend fun fetchMovieDetails(movieId: Int): Movie? {
+        var selectedMovie = findMovieById(movieId)
+
+        if (selectedMovie == null) {
+            Timber.d("Fetching movie details from TMDB API for ID: $movieId")
+            val worker = TMDBWorker()
+            selectedMovie = worker.fetchMovieById(movieId)
+        }
+
+        selectedMovie?.let { movie ->
+            val savedMovie = getSavedMovieById(movie.id)
             if (savedMovie != null) {
-                myRating = savedMovie.myRating
-                alreadySeen = savedMovie.alreadySeen
+                movie.myRating = savedMovie.myRating
+                movie.alreadySeen = savedMovie.alreadySeen
             }
         }
 
-        if (selectedMovie == null) {
-            Timber.e("Movie not found in cache for ID: $selectedMovieId")
-            finish()
-            return
-        }
+        return selectedMovie
+    }
 
-        displayMovieDetails(selectedMovie)
-
-        val saveButton: Button = findViewById(R.id.saveButton)
-        saveButton.setOnClickListener {
-            saveMovieToPreferences(selectedMovie)
-        }
-
-        val addToWatchlistButton: Button = findViewById(R.id.addToWatchlistButton)
-        addToWatchlistButton.setOnClickListener {
-            addToWatchlist(selectedMovie.id)
-        }
+    private fun isInWatchlist(movieId: Int): Boolean {
+        val watchlist = getWatchlist()
+        return watchlist.contains(movieId.toString())
     }
 
     private fun findMovieById(movieId: Int): Movie? {
@@ -129,6 +174,17 @@ class MovieDetailActivity : AppCompatActivity() {
             .apply()
 
         Timber.d("Movie added to watchlist: $movieId")
+    }
+
+    private fun removeFromWatchlist(movieId: Int) {
+        val watchlist = getWatchlist().toMutableSet()
+        watchlist.remove(movieId.toString())
+
+        sharedPreferences.edit()
+            .putStringSet("watchlist", watchlist)
+            .apply()
+
+        Timber.d("Movie removed from watchlist: $movieId")
     }
 
     private fun getSavedMovies(): MutableMap<Int, Movie> {

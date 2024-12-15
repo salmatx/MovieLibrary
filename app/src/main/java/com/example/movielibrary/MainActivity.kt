@@ -3,6 +3,7 @@ package com.example.movielibrary
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var genresChipGroup: ChipGroup
     private lateinit var moviesRecyclerView: RecyclerView
     private lateinit var movieAdapter: MovieAdapter
+    private lateinit var viewWatchlistButton: Button
     private var currentGenreId: Int? = null
     private var isLoading = false
     private val movies: MutableList<Movie> = mutableListOf()
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         searchView = findViewById(R.id.searchView)
         genresChipGroup = findViewById(R.id.genresChipGroup)
         moviesRecyclerView = findViewById(R.id.moviesRecyclerView)
+        viewWatchlistButton = findViewById(R.id.viewWatchlistButton)
 
         moviesRecyclerView.layoutManager = LinearLayoutManager(this)
         movieAdapter = MovieAdapter(movies) { selectedMovie ->
@@ -75,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         Timber.d("MainActivity started")
 
         setupSearchView()
+        setupWatchlistButton()
         fetchAllGenres()
     }
 
@@ -105,6 +109,13 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    private fun setupWatchlistButton() {
+        viewWatchlistButton.setOnClickListener {
+            val intent = Intent(this, WatchlistActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun searchMoviesByTitle(query: String) {
