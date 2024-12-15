@@ -54,7 +54,8 @@ class WatchlistActivity : AppCompatActivity() {
             val watchlistIds = getWatchlistIds()
 
             if (watchlistIds.isEmpty()) {
-                Toast.makeText(this@WatchlistActivity, "Watchlist is empty", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@WatchlistActivity,
+                    getString(R.string.watchlist_is_empty), Toast.LENGTH_SHORT).show()
                 return@launch
             }
 
@@ -92,7 +93,8 @@ class WatchlistActivity : AppCompatActivity() {
         movieAdapter.notifyDataSetChanged()
 
         if (watchlistMovies.isEmpty()) {
-            Toast.makeText(this, "Watchlist is now empty", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@WatchlistActivity,
+                getString(R.string.watchlist_is_empty), Toast.LENGTH_SHORT).show()
         }
     }
 

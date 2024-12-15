@@ -4,18 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.RatingBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.movielibrary.datastore.cachedMovies
 import com.example.movielibrary.models.Movie
+import com.example.movielibrary.workers.StreamingWorker
 import com.example.movielibrary.workers.TMDBWorker
+import com.google.android.material.chip.ChipGroup
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
@@ -50,36 +47,9 @@ class MovieDetailActivity : AppCompatActivity() {
             }
 
             displayMovieDetails(selectedMovie)
+            fetchAndDisplayStreamingPlatforms(selectedMovieId)
 
-            val addToWatchlistButton: Button = findViewById(R.id.addToWatchlistButton)
-            val removeFromWatchlistButton: Button = findViewById(R.id.removeFromWatchlistButton)
-            val saveButton: Button = findViewById(R.id.saveButton)
-
-            val isInWatchlist = isInWatchlist(selectedMovie.id)
-
-            addToWatchlistButton.isEnabled = !isInWatchlist
-            removeFromWatchlistButton.isEnabled = isInWatchlist
-
-            addToWatchlistButton.setOnClickListener {
-                addToWatchlist(selectedMovie.id)
-                addToWatchlistButton.isEnabled = false
-                removeFromWatchlistButton.isEnabled = true
-            }
-
-            removeFromWatchlistButton.setOnClickListener {
-                removeFromWatchlist(selectedMovie.id)
-                addToWatchlistButton.isEnabled = true
-                removeFromWatchlistButton.isEnabled = false
-
-                val resultIntent = Intent()
-                resultIntent.putExtra("removedMovieId", selectedMovie.id)
-                setResult(RESULT_OK, resultIntent)
-                finish()
-            }
-
-            saveButton.setOnClickListener {
-                saveMovieToPreferences(selectedMovie)
-            }
+            setupWatchlistButtons(selectedMovie)
         }
     }
 
@@ -103,6 +73,73 @@ class MovieDetailActivity : AppCompatActivity() {
         return selectedMovie
     }
 
+    private suspend fun fetchAndDisplayStreamingPlatforms(movieId: Int) {
+        val countryCode = getSelectedCountryCode()
+        val streamingPlatforms = StreamingWorker.getStreamingServices(
+            context = this,
+            tmdbId = movieId.toString(),
+            countryCode = countryCode
+        ).distinct()
+
+        val chipGroup: ChipGroup = findViewById(R.id.streamingPlatformsChipGroup)
+        chipGroup.removeAllViews()
+
+        if (streamingPlatforms.isNotEmpty()) {
+            streamingPlatforms.forEach { platform ->
+                val chip = com.google.android.material.chip.Chip(this).apply {
+                    text = platform
+                    isClickable = false
+                    isCheckable = false
+                }
+                chipGroup.addView(chip)
+            }
+        } else {
+            val noPlatformsChip = com.google.android.material.chip.Chip(this).apply {
+                text = "Not available in your region"
+                isClickable = false
+                isCheckable = false
+            }
+            chipGroup.addView(noPlatformsChip)
+        }
+    }
+
+    private fun setupWatchlistButtons(selectedMovie: Movie) {
+        val addToWatchlistButton: Button = findViewById(R.id.addToWatchlistButton)
+        val removeFromWatchlistButton: Button = findViewById(R.id.removeFromWatchlistButton)
+        val saveButton: Button = findViewById(R.id.saveButton)
+
+        val isInWatchlist = isInWatchlist(selectedMovie.id)
+
+        addToWatchlistButton.isEnabled = !isInWatchlist
+        removeFromWatchlistButton.isEnabled = isInWatchlist
+
+        addToWatchlistButton.setOnClickListener {
+            addToWatchlist(selectedMovie.id)
+            addToWatchlistButton.isEnabled = false
+            removeFromWatchlistButton.isEnabled = true
+        }
+
+        removeFromWatchlistButton.setOnClickListener {
+            removeFromWatchlist(selectedMovie.id)
+            addToWatchlistButton.isEnabled = true
+            removeFromWatchlistButton.isEnabled = false
+
+            val resultIntent = Intent()
+            resultIntent.putExtra("removedMovieId", selectedMovie.id)
+            setResult(RESULT_OK, resultIntent)
+            finish()
+        }
+
+        saveButton.setOnClickListener {
+            saveMovieToPreferences(selectedMovie)
+        }
+    }
+
+    private fun getSelectedCountryCode(): String {
+        val sharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("SelectedCountryCode", "us") ?: "us"
+    }
+
     private fun isInWatchlist(movieId: Int): Boolean {
         val watchlist = getWatchlist()
         return watchlist.contains(movieId.toString())
@@ -120,7 +157,6 @@ class MovieDetailActivity : AppCompatActivity() {
         val titleTextView: TextView = findViewById(R.id.titleTextView)
         val descriptionTextView: TextView = findViewById(R.id.descriptionTextView)
         val dateTextView: TextView = findViewById(R.id.dateTextView)
-        val platformsTextView: TextView = findViewById(R.id.platformsTextView)
         val posterImageView: ImageView = findViewById(R.id.posterImageView)
         val ratingBar: RatingBar = findViewById(R.id.ratingBar)
         val myRatingBar: RatingBar = findViewById(R.id.myRatingBar)
@@ -131,7 +167,6 @@ class MovieDetailActivity : AppCompatActivity() {
         titleTextView.text = movie.title
         descriptionTextView.text = movie.description
         dateTextView.text = "Release Date: ${movie.date}"
-        platformsTextView.text = "Available on: ${movie.platforms?.joinToString(", ") ?: "Not available"}"
         ratingBar.rating = movie.rating / 2
         myRatingBar.rating = movie.myRating / 2
 

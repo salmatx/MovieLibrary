@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            android:minHeight="40dp"
+            android:minHeight="30dp"
             android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -55,7 +55,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:chipSpacingHorizontal="8dp"
-            app:chipSpacingVertical="4dp"
+            app:chipSpacingVertical="1dp"
             app:singleSelection="true" />
 
         <androidx.recyclerview.widget.RecyclerView

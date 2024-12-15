@@ -2,7 +2,6 @@ package com.example.movielibrary
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -10,8 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -49,7 +46,6 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        // Initialize views
         searchView = findViewById(R.id.searchView)
         genresChipGroup = findViewById(R.id.genresChipGroup)
         moviesRecyclerView = findViewById(R.id.moviesRecyclerView)
@@ -59,10 +55,26 @@ class MainActivity : AppCompatActivity() {
 
         moviesRecyclerView.layoutManager = LinearLayoutManager(this)
         movieAdapter = MovieAdapter(movies) { selectedMovie ->
-            Toast.makeText(this, "Selected: ${selectedMovie.title}", Toast.LENGTH_SHORT).show()
             openMovieDetailActivity(selectedMovie)
         }
         moviesRecyclerView.adapter = movieAdapter
+
+        moviesRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                if (!isLoading && totalItemCount > 0 &&
+                    visibleItemCount + firstVisibleItemPosition >= totalItemCount - 5) {
+                    currentGenreId?.let { fetchMoviesByGenre(it) }
+                }
+            }
+        })
+
 
         setupDrawer()
         setupSearchView()
@@ -83,7 +95,8 @@ class MainActivity : AppCompatActivity() {
             if (countries.isNotEmpty()) {
                 displayCountriesInDrawer(countries)
             } else {
-                Toast.makeText(this@MainActivity, "No countries available", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity,
+                    getString(R.string.no_countries_available), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -96,9 +109,6 @@ class MainActivity : AppCompatActivity() {
                 val selectedCountryCode = countries.find { it.name == selectedCountryName }?.countryCode
                 if (selectedCountryCode != null) {
                     saveCountryCodeToPreferences(selectedCountryCode)
-                    Toast.makeText(this@MainActivity, "Selected Country Code: $selectedCountryCode", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@MainActivity, "Country code not found for $selectedCountryName", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -120,7 +130,9 @@ class MainActivity : AppCompatActivity() {
         val menu = navigationView.menu
         menu.clear()
 
-        for (country in countries) {
+        val sortedCountries = countries.sortedBy { it.name }
+
+        for (country in sortedCountries) {
             val countryName = country.name ?: "Unknown Country"
             menu.add(countryName)
         }
@@ -180,7 +192,8 @@ class MainActivity : AppCompatActivity() {
                 movies.addAll(searchResults)
                 movieAdapter.notifyDataSetChanged()
             } else {
-                Toast.makeText(this@MainActivity, "No results found for '$query'", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity,
+                    getString(R.string.no_results_found_for, query), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -193,8 +206,6 @@ class MainActivity : AppCompatActivity() {
 
             if (genres != null) {
                 displayGenresAsChips(genres)
-            } else {
-                Toast.makeText(this@MainActivity, "Failed to fetch genres", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -216,8 +227,6 @@ class MainActivity : AppCompatActivity() {
                 currentGenreId = checkedId
                 clearMovies()
                 fetchMoviesByGenre(checkedId)
-            } else {
-                Toast.makeText(this, "No genre selected", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -240,8 +249,6 @@ class MainActivity : AppCompatActivity() {
             if (newMovies != null) {
                 movies.addAll(newMovies)
                 movieAdapter.notifyDataSetChanged()
-            } else {
-                Toast.makeText(this@MainActivity, "Failed to fetch movies", Toast.LENGTH_SHORT).show()
             }
         }
     }

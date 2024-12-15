@@ -5,4 +5,7 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="available_countries">Available Countries</string>
+    <string name="watchlist_is_empty">Watchlist is empty</string>
+    <string name="no_countries_available">No countries available</string>
+    <string name="no_results_found_for">No results found for \'%1$s\'</string>
 </resources>

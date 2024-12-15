@@ -35,6 +35,36 @@ class StreamingWorker(
                 emptyList()
             }
         }
+
+        suspend fun getStreamingServices(
+            context: Context,
+            tmdbId: String,
+            countryCode: String
+        ): List<String> {
+            val streamingApi = NetworkClient.getStreamingClient().create(StreamingApi::class.java)
+            val apiKey = BuildConfig.STREAMING_API_KEY
+
+            return try {
+                val response = streamingApi.getStreamingServices(
+                    tmdbId = tmdbId,
+                    country = countryCode,
+                    apiKey = apiKey
+                )
+
+                if (response.isSuccessful) {
+                    response.body()?.streamingOptions?.get(countryCode)?.map { it.service.name } ?: emptyList()
+                } else {
+                    Timber.e("Failed to fetch streaming services: ${response.errorBody()?.string()}")
+                    emptyList()
+                }
+            } catch (e: HttpException) {
+                Timber.e("HTTP Exception while fetching streaming services: ${e.message}")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e("Exception while fetching streaming services: ${e.message}")
+                emptyList()
+            }
+        }
     }
 
     override suspend fun doWork(): Result {
@@ -95,3 +125,4 @@ class StreamingWorker(
         editor.apply()
     }
 }
+
