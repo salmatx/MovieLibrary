@@ -26,18 +26,6 @@ class MovieAdapter(
 
     override fun getItemCount(): Int = movies.size
 
-    fun updateMovies(newMovies: List<Movie>) {
-        movies.clear()
-        movies.addAll(newMovies)
-        notifyDataSetChanged()
-    }
-
-    fun addMovies(newMovies: List<Movie>) {
-        val startPosition = movies.size
-        movies.addAll(newMovies)
-        notifyItemRangeInserted(startPosition, newMovies.size)
-    }
-
     inner class MovieViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val posterImage: ImageView = itemView.findViewById(R.id.posterImage)
         private val title: TextView = itemView.findViewById(R.id.title)

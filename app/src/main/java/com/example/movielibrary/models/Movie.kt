@@ -7,7 +7,7 @@ data class Movie(
     @SerializedName("id") val id: Int,
     @SerializedName("title") val title: String,
     @SerializedName("overview") val description: String,
-    @SerializedName("release_date") val date: Date,
+    @SerializedName("release_date") val date: String,
     @SerializedName("vote_average") val rating: Float,
     @SerializedName("poster_path") var imageUrl: String?,
     val platforms: List<String>,

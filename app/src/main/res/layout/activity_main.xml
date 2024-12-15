@@ -5,24 +5,40 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     tools:context=".MainActivity">
 
+    <!-- SearchView for movie search -->
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:queryHint="Search movies..."
+        android:iconifiedByDefault="false"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <!-- ChipGroup for genres -->
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/genresChipGroup"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="8dp"
+        app:layout_constraintTop_toBottomOf="@id/searchView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:chipSpacingHorizontal="8dp"
-        app:chipSpacingVertical="8dp"
+        app:chipSpacingVertical="4dp"
         app:singleSelection="true" />
 
+    <!-- RecyclerView for movies -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/moviesRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_margin="8dp"
         app:layout_constraintTop_toBottomOf="@id/genresChipGroup"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

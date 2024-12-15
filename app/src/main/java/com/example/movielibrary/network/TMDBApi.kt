@@ -36,6 +36,16 @@ interface TMDBApi {
         @Query("api_key") apiKey: String,
         @Query("language") language: String = "en"
     ): Response<Movie>
+
+    @Headers("Content-Type: application/json")
+    @GET("search/movie")
+    suspend fun searchMovies(
+        @Query("api_key") apiKey: String,
+        @Query("query") query: String,
+        @Query("include_adult") includeAdult: Boolean = false,
+        @Query("language") language: String = "en-US",
+        @Query("page") page: Int = 1
+    ): Response<MovieResponse>
 }
 
 data class GenreResponse(

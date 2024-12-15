@@ -11,6 +11,8 @@ import com.example.movielibrary.network.TMDBApi
 import com.example.movielibrary.BuildConfig
 import retrofit2.HttpException
 import timber.log.Timber
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class TMDBWorker {
 
@@ -26,13 +28,16 @@ class TMDBWorker {
             val tmdbApi = NetworkClient.getTMDBClient().create(TMDBApi::class.java)
 
             val response = tmdbApi.getAllGenres(tmdbApiKey)
-            if(response.isSuccessful) {
+            if (response.isSuccessful) {
                 val genres = response.body()!!.genres
                 Timber.d("Fetched Genres: $genres")
 
                 cachedGenres = GenresStores(genres)
+                genres
+            } else {
+                Timber.e("Failed to fetch genres. Response: ${response.message()}")
+                null
             }
-            cachedGenres?.genres
         } catch (e: HttpException) {
             Timber.e(e, "HTTP error while fetching genres")
             null
@@ -63,7 +68,7 @@ class TMDBWorker {
             if (response.isSuccessful && response.body() != null) {
                 val baseUrl = "https://image.tmdb.org/t/p/w500"
                 val movies = response.body()!!.results.map { movie ->
-                    movie.apply { imageUrl = baseUrl + imageUrl }
+                    movie.apply { imageUrl = baseUrl + (imageUrl ?: "") }
                 }
                 Timber.d("Fetched Movies: $movies")
 
@@ -83,7 +88,34 @@ class TMDBWorker {
         }
     }
 
-    fun getAllCachedMoviesByGenre(genreId: Int): List<Movie>? {
-        return cachedMovies[genreId]?.flatMap { it.results }
+    suspend fun searchMoviesByTitle(query: String, page: Int = 1): List<Movie>? {
+        return try {
+            val encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.toString())
+            Timber.d("Searching movies with query: $query (encoded: $encodedQuery)")
+
+            val tmdbApiKey = BuildConfig.TMDB_API
+            val tmdbApi = NetworkClient.getTMDBClient().create(TMDBApi::class.java)
+
+            val response = tmdbApi.searchMovies(
+                apiKey = tmdbApiKey,
+                query = encodedQuery,
+                page = page
+            )
+
+            if (response.isSuccessful && response.body() != null) {
+                val baseUrl = "https://image.tmdb.org/t/p/w500"
+                val movies = response.body()!!.results.map { movie ->
+                    movie.apply { imageUrl = baseUrl + (imageUrl ?: "") }
+                }
+                Timber.d("Search results: $movies")
+                movies
+            } else {
+                Timber.e("No results found for query: $query. Response: ${response.message()}")
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error while searching movies: ${e.localizedMessage}")
+            null
+        }
     }
 }

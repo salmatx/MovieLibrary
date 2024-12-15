@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -16,23 +17,28 @@ import com.example.movielibrary.models.Movie
 import com.example.movielibrary.workers.TMDBWorker
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var searchView: SearchView
     private lateinit var genresChipGroup: ChipGroup
     private lateinit var moviesRecyclerView: RecyclerView
     private lateinit var movieAdapter: MovieAdapter
     private var currentGenreId: Int? = null
     private var isLoading = false
     private val movies: MutableList<Movie> = mutableListOf()
+    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        searchView = findViewById(R.id.searchView)
         genresChipGroup = findViewById(R.id.genresChipGroup)
         moviesRecyclerView = findViewById(R.id.moviesRecyclerView)
 
@@ -65,7 +71,51 @@ class MainActivity : AppCompatActivity() {
         }
 
         Timber.d("MainActivity started")
+
+        setupSearchView()
         fetchAllGenres()
+    }
+
+    private fun setupSearchView() {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                newText?.let { query ->
+                    searchJob?.cancel()
+                    searchJob = lifecycleScope.launch {
+                        delay(300)
+                        if (query.isNotBlank()) {
+                            searchMoviesByTitle(query)
+                        } else {
+                            clearMovies()
+                        }
+                    }
+                }
+                return true
+            }
+        })
+    }
+
+    private fun searchMoviesByTitle(query: String) {
+        if (isLoading) return
+        isLoading = true
+
+        lifecycleScope.launch {
+            val worker = TMDBWorker()
+            val searchResults = worker.searchMoviesByTitle(query)
+
+            isLoading = false
+            if (searchResults != null && searchResults.isNotEmpty()) {
+                clearMovies()
+                movies.addAll(searchResults)
+                movieAdapter.notifyDataSetChanged()
+            } else {
+                Toast.makeText(this@MainActivity, "No results found for '$query'", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun fetchAllGenres() {
