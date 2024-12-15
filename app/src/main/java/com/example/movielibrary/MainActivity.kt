@@ -1,5 +1,6 @@
 package com.example.movielibrary
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         moviesRecyclerView.layoutManager = LinearLayoutManager(this)
         movieAdapter = MovieAdapter(movies) { selectedMovie ->
             Toast.makeText(this, "Selected: ${selectedMovie.title}", Toast.LENGTH_SHORT).show()
+            openMovieDetailActivity(selectedMovie)
         }
         moviesRecyclerView.adapter = movieAdapter
 
@@ -74,6 +76,12 @@ class MainActivity : AppCompatActivity() {
 
         setupSearchView()
         fetchAllGenres()
+    }
+
+    private fun openMovieDetailActivity(selectedMovie: Movie) {
+        val intent = Intent(this, MovieDetailActivity::class.java)
+        intent.putExtra("selectedMovie", selectedMovie.id)
+        startActivity(intent)
     }
 
     private fun setupSearchView() {
