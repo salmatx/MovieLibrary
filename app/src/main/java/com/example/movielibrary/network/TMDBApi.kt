@@ -2,6 +2,7 @@ package com.example.movielibrary.network
 
 import com.example.movielibrary.models.Genre
 import com.example.movielibrary.models.Movie
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
@@ -14,7 +15,7 @@ interface TMDBApi {
     suspend fun getAllGenres(
         @Query("api_key") apiKey: String,
         @Query("language") language: String = "en"
-    ): GenreResponse
+    ): Response<GenreResponse>
 
     @Headers("Content-Type: application/json")
     @GET("discover/movie")
@@ -26,7 +27,7 @@ interface TMDBApi {
         @Query("include_video") includeVideo: Boolean = false,
         @Query("page") page: Int = 1,
         @Query("with_genres") genreId: Int
-    ): MovieResponse
+    ): Response<MovieResponse>
 
     @Headers("Content-Type: application/json")
     @GET("movie/{movie_id}")
@@ -34,7 +35,7 @@ interface TMDBApi {
         @Path("movie_id") movieId: Int,
         @Query("api_key") apiKey: String,
         @Query("language") language: String = "en"
-    ): Movie
+    ): Response<Movie>
 }
 
 data class GenreResponse(

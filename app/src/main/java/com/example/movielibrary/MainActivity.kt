@@ -24,6 +24,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var genresChipGroup: ChipGroup
     private lateinit var moviesRecyclerView: RecyclerView
     private lateinit var movieAdapter: MovieAdapter
+    private var currentGenreId: Int? = null
+    private var isLoading = false
+    private val movies: MutableList<Movie> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,8 +36,27 @@ class MainActivity : AppCompatActivity() {
         genresChipGroup = findViewById(R.id.genresChipGroup)
         moviesRecyclerView = findViewById(R.id.moviesRecyclerView)
 
-        // Set RecyclerView layout manager
         moviesRecyclerView.layoutManager = LinearLayoutManager(this)
+        movieAdapter = MovieAdapter(movies) { selectedMovie ->
+            Toast.makeText(this, "Selected: ${selectedMovie.title}", Toast.LENGTH_SHORT).show()
+        }
+        moviesRecyclerView.adapter = movieAdapter
+
+        moviesRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                if (!isLoading && totalItemCount > 0 &&
+                    visibleItemCount + firstVisibleItemPosition >= totalItemCount
+                ) {
+                    currentGenreId?.let { fetchMoviesByGenre(it) }
+                }
+            }
+        })
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -43,7 +65,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         Timber.d("MainActivity started")
-
         fetchAllGenres()
     }
 
@@ -75,6 +96,8 @@ class MainActivity : AppCompatActivity() {
 
         genresChipGroup.setOnCheckedChangeListener { _, checkedId ->
             if (checkedId != View.NO_ID) {
+                currentGenreId = checkedId
+                clearMovies()
                 fetchMoviesByGenre(checkedId)
             } else {
                 Toast.makeText(this, "No genre selected", Toast.LENGTH_SHORT).show()
@@ -82,25 +105,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun clearMovies() {
+        movies.clear()
+        movieAdapter.notifyDataSetChanged()
+    }
+
     private fun fetchMoviesByGenre(genreId: Int) {
-        Timber.d("Fetching movies for genre ID: $genreId")
+        if (isLoading) return
+        isLoading = true
+
+        val nextPage = (movies.size / 20) + 1
         lifecycleScope.launch {
             val worker = TMDBWorker()
-            val movies = worker.fetchMoviesByGenre(genreId)
+            val newMovies = worker.fetchMoviesByGenre(genreId, nextPage)
 
-            if (movies != null) {
-                displayMovies(movies)
+            isLoading = false
+            if (newMovies != null) {
+                movies.addAll(newMovies)
+                movieAdapter.notifyDataSetChanged()
             } else {
                 Toast.makeText(this@MainActivity, "Failed to fetch movies", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun displayMovies(movies: List<Movie>) {
-        Timber.d("Displaying movies: $movies")
-        movieAdapter = MovieAdapter(movies) { selectedMovie ->
-            Toast.makeText(this, "Selected: ${selectedMovie.title}", Toast.LENGTH_SHORT).show()
-        }
-        moviesRecyclerView.adapter = movieAdapter
     }
 }

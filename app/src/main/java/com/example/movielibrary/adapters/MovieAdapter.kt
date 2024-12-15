@@ -11,28 +11,9 @@ import com.example.movielibrary.R
 import com.example.movielibrary.models.Movie
 
 class MovieAdapter(
-    private val movies: List<Movie>,
-    private val onMovieClick: (Movie) -> Unit
+    private var movies: MutableList<Movie>,
+    private val onMovieClicked: (Movie) -> Unit
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
-
-    class MovieViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val movieTitle: TextView = itemView.findViewById(R.id.title)
-        private val moviePoster: ImageView = itemView.findViewById(R.id.posterImage)
-
-        fun bind(movie: Movie, onMovieClick: (Movie) -> Unit) {
-            movieTitle.text = movie.title
-
-            Glide.with(itemView.context)
-                .load(movie.imageUrl)
-                .placeholder(R.drawable.ic_launcher_foreground)
-                .error(R.drawable.ic_launcher_foreground)
-                .into(moviePoster)
-
-            itemView.setOnClickListener {
-                onMovieClick(movie)
-            }
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_movie, parent, false)
@@ -40,8 +21,37 @@ class MovieAdapter(
     }
 
     override fun onBindViewHolder(holder: MovieViewHolder, position: Int) {
-        holder.bind(movies[position], onMovieClick)
+        holder.bind(movies[position])
     }
 
     override fun getItemCount(): Int = movies.size
+
+    fun updateMovies(newMovies: List<Movie>) {
+        movies.clear()
+        movies.addAll(newMovies)
+        notifyDataSetChanged()
+    }
+
+    fun addMovies(newMovies: List<Movie>) {
+        val startPosition = movies.size
+        movies.addAll(newMovies)
+        notifyItemRangeInserted(startPosition, newMovies.size)
+    }
+
+    inner class MovieViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val posterImage: ImageView = itemView.findViewById(R.id.posterImage)
+        private val title: TextView = itemView.findViewById(R.id.title)
+
+        fun bind(movie: Movie) {
+            title.text = movie.title
+            Glide.with(itemView.context)
+                .load(movie.imageUrl)
+                .placeholder(android.R.color.darker_gray)
+                .into(posterImage)
+
+            itemView.setOnClickListener {
+                onMovieClicked(movie)
+            }
+        }
+    }
 }
