@@ -56,6 +56,11 @@ class MovieDetailActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             saveMovieToPreferences(selectedMovie)
         }
+
+        val addToWatchlistButton: Button = findViewById(R.id.addToWatchlistButton)
+        addToWatchlistButton.setOnClickListener {
+            addToWatchlist(selectedMovie.id)
+        }
     }
 
     private fun findMovieById(movieId: Int): Movie? {
@@ -115,6 +120,17 @@ class MovieDetailActivity : AppCompatActivity() {
         Timber.d("Movie saved: ${movie.title}")
     }
 
+    private fun addToWatchlist(movieId: Int) {
+        val watchlist = getWatchlist().toMutableSet()
+        watchlist.add(movieId.toString())
+
+        sharedPreferences.edit()
+            .putStringSet("watchlist", watchlist)
+            .apply()
+
+        Timber.d("Movie added to watchlist: $movieId")
+    }
+
     private fun getSavedMovies(): MutableMap<Int, Movie> {
         val savedMoviesJson = sharedPreferences.getString("saved_movies", null)
         return if (savedMoviesJson != null) {
@@ -127,5 +143,9 @@ class MovieDetailActivity : AppCompatActivity() {
 
     private fun getSavedMovieById(movieId: Int): Movie? {
         return getSavedMovies()[movieId]
+    }
+
+    private fun getWatchlist(): Set<String> {
+        return sharedPreferences.getStringSet("watchlist", emptySet()) ?: emptySet()
     }
 }

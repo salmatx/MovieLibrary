@@ -77,7 +77,6 @@
             android:numStars="5"
             android:stepSize="1.0" />
 
-        <!-- Already Seen Section -->
         <TextView
             android:id="@+id/alreadySeenLabel"
             android:layout_width="wrap_content"
@@ -105,11 +104,26 @@
                 android:text="No" />
         </RadioGroup>
 
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save" />
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:gravity="start">
+
+            <Button
+                android:id="@+id/saveButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Save" />
+
+            <Button
+                android:id="@+id/addToWatchlistButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Add to Watchlist" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
