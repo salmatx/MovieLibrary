@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
@@ -9,14 +10,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
-
-        <ImageView
-            android:id="@+id/posterImageView"
-            android:layout_width="200dp"
-            android:layout_height="300dp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/movie_poster" />
 
         <TextView
             android:id="@+id/titleTextView"
@@ -38,21 +31,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Release Date: " />
+            android:text="Release Date: Unknown" />
 
         <TextView
             android:id="@+id/platformsTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Available on: " />
+            android:text="Available on: Unknown" />
 
-        <TextView
-            android:id="@+id/alreadySeenTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Already Seen: " />
+        <ImageView
+            android:id="@+id/posterImageView"
+            android:layout_width="200dp"
+            android:layout_height="300dp"
+            android:layout_marginTop="16dp"
+            android:contentDescription="@string/movie_poster"
+            android:scaleType="centerCrop" />
 
         <TextView
             android:id="@+id/ratingLabel"
@@ -81,8 +75,41 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:numStars="5"
-            android:stepSize="0.1"
-            android:isIndicator="true" />
-    </LinearLayout>
+            android:stepSize="1.0" />
 
+        <!-- Already Seen Section -->
+        <TextView
+            android:id="@+id/alreadySeenLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Already Seen:"
+            android:layout_marginTop="16dp" />
+
+        <RadioGroup
+            android:id="@+id/alreadySeenRadioGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/radioButtonYes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yes" />
+
+            <RadioButton
+                android:id="@+id/radioButtonNo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No" />
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save" />
+
+    </LinearLayout>
 </ScrollView>

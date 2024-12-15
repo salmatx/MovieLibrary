@@ -10,6 +10,6 @@ data class Movie(
     @SerializedName("vote_average") val rating: Float,
     @SerializedName("poster_path") var imageUrl: String?,
     val platforms: List<String>?,
-    val myRating: Float,
-    val alreadySeen: Boolean
+    var myRating: Float,
+    var alreadySeen: Boolean
 )

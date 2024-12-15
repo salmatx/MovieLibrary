@@ -1,80 +1,131 @@
 package com.example.movielibrary
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.widget.Button
 import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.RatingBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.movielibrary.datastore.cachedMovies
 import com.example.movielibrary.models.Movie
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import timber.log.Timber
 
 class MovieDetailActivity : AppCompatActivity() {
+
+    private lateinit var sharedPreferences: SharedPreferences
+    private val gson = Gson()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_movie_detail)
 
-        try {
-            val selectedMovieId = intent.getIntExtra("selectedMovie", -1)
+        sharedPreferences = getSharedPreferences("SavedMovies", Context.MODE_PRIVATE)
 
-            if (selectedMovieId == -1) {
-                Timber.e("Movie ID not passed to MovieDetailActivity")
-                finish()
-                return
+        val selectedMovieId = intent.getIntExtra("selectedMovie", -1)
+
+        if (selectedMovieId == -1) {
+            Timber.e("Movie ID not passed to MovieDetailActivity")
+            finish()
+            return
+        }
+
+        val selectedMovie = findMovieById(selectedMovieId)?.apply {
+            val savedMovie = getSavedMovieById(id)
+            if (savedMovie != null) {
+                myRating = savedMovie.myRating
+                alreadySeen = savedMovie.alreadySeen
             }
+        }
 
-            val selectedMovie = findMovieById(selectedMovieId)
-            if (selectedMovie == null) {
-                Timber.e("Movie not found in cache for ID: $selectedMovieId")
-                finish()
-                return
-            }
+        if (selectedMovie == null) {
+            Timber.e("Movie not found in cache for ID: $selectedMovieId")
+            finish()
+            return
+        }
 
-            displayMovieDetails(selectedMovie)
-        } catch (e: Exception) {
-            Timber.e(e, "Error initializing MovieDetailActivity")
+        displayMovieDetails(selectedMovie)
+
+        val saveButton: Button = findViewById(R.id.saveButton)
+        saveButton.setOnClickListener {
+            saveMovieToPreferences(selectedMovie)
         }
     }
 
     private fun findMovieById(movieId: Int): Movie? {
         cachedMovies.values.flatten().forEach { movieStore ->
             val movie = movieStore.results.find { it.id == movieId }
-            if (movie != null) {
-                return movie
-            }
+            if (movie != null) return movie
         }
         return null
     }
 
     private fun displayMovieDetails(movie: Movie) {
-        try {
-            val titleTextView: TextView = findViewById(R.id.titleTextView)
-            val descriptionTextView: TextView = findViewById(R.id.descriptionTextView)
-            val dateTextView: TextView = findViewById(R.id.dateTextView)
-            val platformsTextView: TextView = findViewById(R.id.platformsTextView)
-            val alreadySeenTextView: TextView = findViewById(R.id.alreadySeenTextView)
-            val posterImageView: ImageView = findViewById(R.id.posterImageView)
+        val titleTextView: TextView = findViewById(R.id.titleTextView)
+        val descriptionTextView: TextView = findViewById(R.id.descriptionTextView)
+        val dateTextView: TextView = findViewById(R.id.dateTextView)
+        val platformsTextView: TextView = findViewById(R.id.platformsTextView)
+        val posterImageView: ImageView = findViewById(R.id.posterImageView)
+        val ratingBar: RatingBar = findViewById(R.id.ratingBar)
+        val myRatingBar: RatingBar = findViewById(R.id.myRatingBar)
+        val radioGroup: RadioGroup = findViewById(R.id.alreadySeenRadioGroup)
+        val radioButtonYes: RadioButton = findViewById(R.id.radioButtonYes)
+        val radioButtonNo: RadioButton = findViewById(R.id.radioButtonNo)
 
-            val ratingBar: RatingBar = findViewById(R.id.ratingBar)
-            val myRatingBar: RatingBar = findViewById(R.id.myRatingBar)
+        titleTextView.text = movie.title
+        descriptionTextView.text = movie.description
+        dateTextView.text = "Release Date: ${movie.date}"
+        platformsTextView.text = "Available on: ${movie.platforms?.joinToString(", ") ?: "Not available"}"
+        ratingBar.rating = movie.rating / 2
+        myRatingBar.rating = movie.myRating / 2
 
-            titleTextView.text = movie.title
-            descriptionTextView.text = movie.description
-            dateTextView.text = "Release Date: ${movie.date}"
-            platformsTextView.text = "Available on: ${movie.platforms?.joinToString(", ") ?: "Not available"}"
-            alreadySeenTextView.text = if (movie.alreadySeen) "Already Seen: Yes" else "Already Seen: No"
+        Glide.with(this)
+            .load(movie.imageUrl)
+            .placeholder(android.R.color.darker_gray)
+            .into(posterImageView)
 
-            ratingBar.rating = movie.rating / 2
-            myRatingBar.rating = movie.myRating / 2
-
-            Glide.with(this)
-                .load(movie.imageUrl)
-                .placeholder(android.R.color.darker_gray)
-                .into(posterImageView)
-        } catch (e: Exception) {
-            Timber.e(e, "Error displaying movie details")
+        when (movie.alreadySeen) {
+            true -> radioButtonYes.isChecked = true
+            false -> radioButtonNo.isChecked = true
         }
+
+        myRatingBar.setOnRatingBarChangeListener { _, rating, _ ->
+            movie.myRating = rating * 2
+        }
+
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            movie.alreadySeen = (checkedId == R.id.radioButtonYes)
+        }
+    }
+
+    private fun saveMovieToPreferences(movie: Movie) {
+        val savedMovies = getSavedMovies()
+        savedMovies[movie.id] = movie
+
+        sharedPreferences.edit()
+            .putString("saved_movies", gson.toJson(savedMovies))
+            .apply()
+
+        Timber.d("Movie saved: ${movie.title}")
+    }
+
+    private fun getSavedMovies(): MutableMap<Int, Movie> {
+        val savedMoviesJson = sharedPreferences.getString("saved_movies", null)
+        return if (savedMoviesJson != null) {
+            val type = object : TypeToken<MutableMap<Int, Movie>>() {}.type
+            gson.fromJson(savedMoviesJson, type)
+        } else {
+            mutableMapOf()
+        }
+    }
+
+    private fun getSavedMovieById(movieId: Int): Movie? {
+        return getSavedMovies()[movieId]
     }
 }
